@@ -1,0 +1,13 @@
+app {
+    name = "GazaPay"
+    version = "1.0.0"
+    debug = true
+    server {
+        host = "0.0.0.0"
+        port = 8080
+        ssl {
+            enabled = true
+            port = 8443
+        }
+    }
+}
