@@ -79,4 +79,4 @@ mvn test
 
 ## Requirements
 
-Java 17+, Maven, ASM 9.7 (only runtime dependency besides tests).
+Java 17+, Maven, ASM 9.7 (only runtime dependency besides tests)..
