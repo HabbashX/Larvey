@@ -59,7 +59,7 @@ See `larvey-examples` for a runnable demo (`com.habbashx.larvey.example.Main` pl
 - Reflection mapper: primitives, `BigInteger`/`BigDecimal`, enums, `List`/`Set`/`Map`, arrays, nested objects, `Optional`, records, `@LarveyCreator`
 - Annotations: `@LarveyConfig`, `@LarveyProperty`, `@LarveyIgnore`, `@LarveyCreator`, `@LarveyDefault`, `@LarveyAlias`, `@LarveyFormat`, `@LarveyConverter`, `@LarveyRequired`
 - Serialization: `Larvey.write(config)` produces deterministic readable output, including nested maps
-- Functions: `env()`, `sys()`, `file()`, `property()`, plus custom `LarveyFunction` registration with configuration context
+- Functions: `env()`, `sys()`, `file()`, `property()`, `concat()`, `upper()`, `lower()`, `trim()`, plus custom `LarveyFunction` registration with configuration context
 - Interpolation: `url = "${host}:${port}"` resolved against scope then root, with `$${` escape and cycle guard
 - Type conversion: `String` to `UUID`, `Path`, `URI`, `Duration`, enums, numerics, custom converters
 - Validation: `@LarveyRequired`, `@LarveyFormat("regex:...")`; mapping errors carry path, target type, line, and column

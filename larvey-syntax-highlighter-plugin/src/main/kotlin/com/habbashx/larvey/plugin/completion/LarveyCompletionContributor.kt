@@ -75,8 +75,11 @@ class LarveyCompletionContributor : CompletionContributor() {
         private fun keyword(name: String): LookupElement =
             LookupElementBuilder.create(name).withTypeText("keyword")
 
-        private fun function(name: String, withParens: Boolean): LookupElement {
-            val builder = LookupElementBuilder.create(name).withTypeText("function").withIcon(AllIcons.Nodes.Function)
+        private fun function(fn: Fn, withParens: Boolean): LookupElement {
+            val builder = LookupElementBuilder.create(fn.name)
+                .withTypeText(fn.doc)
+                .withTailText(fn.signature, true)
+                .withIcon(AllIcons.Nodes.Function)
             return if (withParens) builder.withInsertHandler(parenHandler) else builder
         }
 
@@ -184,7 +187,18 @@ class LarveyCompletionContributor : CompletionContributor() {
         }
 
         companion object {
-            val FUNCTIONS = listOf("env", "sys", "file", "property")
+            data class Fn(val name: String, val signature: String, val doc: String)
+
+            val FUNCTIONS = listOf(
+                Fn("env", "(key[, default])", "Read an environment variable"),
+                Fn("sys", "(key[, default])", "Read a Java system property"),
+                Fn("file", "(path[, default])", "Read a UTF-8 text file"),
+                Fn("property", "(path[, default])", "Reference another configuration value"),
+                Fn("concat", "(a, b, ...)", "Concatenate strings"),
+                Fn("upper", "(str)", "Convert a string to upper case"),
+                Fn("lower", "(str)", "Convert a string to lower case"),
+                Fn("trim", "(str)", "Strip surrounding whitespace")
+            )
         }
     }
 }

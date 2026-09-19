@@ -15,6 +15,7 @@ class LarveyColorSettingsPage : ColorSettingsPage {
 
     override fun getAttributeDescriptors(): Array<AttributesDescriptor> = arrayOf(
         AttributesDescriptor("Key", LarveyTextAttributes.KEY),
+        AttributesDescriptor("Block name", LarveyTextAttributes.BLOCK_NAME),
         AttributesDescriptor("String", LarveyTextAttributes.STRING),
         AttributesDescriptor("Number", LarveyTextAttributes.NUMBER),
         AttributesDescriptor("Boolean", LarveyTextAttributes.BOOLEAN),
@@ -35,12 +36,13 @@ class LarveyColorSettingsPage : ColorSettingsPage {
     override fun getColorDescriptors(): Array<ColorDescriptor> = ColorDescriptor.EMPTY_ARRAY
     override fun getAdditionalHighlightingTagToDescriptorMap(): Map<String, TextAttributesKey> = mapOf(
         "key" to LarveyTextAttributes.KEY,
+        "block" to LarveyTextAttributes.BLOCK_NAME,
         "fn" to LarveyTextAttributes.FUNCTION_CALL,
         "interp" to LarveyTextAttributes.INTERPOLATION
     )
 
     override fun getDemoText(): String = """// GazaPay service configuration
-<key>app</key> {
+<block>app</block> {
     <key>name</key> = "GazaPay"
     <key>version</key> = "1.0.0"
     <key>debug</key> = true

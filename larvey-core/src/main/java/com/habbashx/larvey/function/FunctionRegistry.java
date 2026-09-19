@@ -14,6 +14,10 @@ public final class FunctionRegistry {
         register(new SysFunction());
         register(new FileFunction());
         register(new PropertyFunction());
+        register(new ConcatFunction());
+        register(new UpperFunction());
+        register(new LowerFunction());
+        register(new TrimFunction());
     }
 
     public void register(LarveyFunction function) {

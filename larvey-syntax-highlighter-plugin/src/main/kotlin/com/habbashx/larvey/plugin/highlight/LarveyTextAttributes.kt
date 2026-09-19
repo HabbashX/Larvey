@@ -5,6 +5,7 @@ import com.intellij.openapi.editor.colors.TextAttributesKey
 
 object LarveyTextAttributes {
     @JvmField val KEY = key("LARVEY_KEY", DefaultLanguageHighlighterColors.IDENTIFIER)
+    @JvmField val BLOCK_NAME = key("LARVEY_BLOCK_NAME", DefaultLanguageHighlighterColors.FUNCTION_DECLARATION)
     @JvmField val STRING = key("LARVEY_STRING", DefaultLanguageHighlighterColors.STRING)
     @JvmField val NUMBER = key("LARVEY_NUMBER", DefaultLanguageHighlighterColors.NUMBER)
     @JvmField val BOOLEAN = key("LARVEY_BOOLEAN", DefaultLanguageHighlighterColors.KEYWORD)

@@ -51,4 +51,30 @@ class FunctionsTest {
         }
         throw new AssertionError("Expected cycle detection");
     }
+
+    @Test
+    void concatenatesStrings() {
+        FileHolder holder = Larvey.parse("content = concat(\"foo\", \"-\", \"bar\")").map(FileHolder.class);
+        assertEquals("foo-bar", holder.content);
+    }
+
+    @Test
+    void changesCase() {
+        FileHolder upper = Larvey.parse("content = upper(\"gaza\")").map(FileHolder.class);
+        assertEquals("GAZA", upper.content);
+        FileHolder lower = Larvey.parse("content = lower(\"GaZa\")").map(FileHolder.class);
+        assertEquals("gaza", lower.content);
+    }
+
+    @Test
+    void trimsWhitespace() {
+        FileHolder holder = Larvey.parse("content = trim(\"  padded  \")").map(FileHolder.class);
+        assertEquals("padded", holder.content);
+    }
+
+    @Test
+    void composesFunctions() {
+        FileHolder holder = Larvey.parse("content = upper(concat(\"ga\", \"za\"))").map(FileHolder.class);
+        assertEquals("GAZA", holder.content);
+    }
 }
