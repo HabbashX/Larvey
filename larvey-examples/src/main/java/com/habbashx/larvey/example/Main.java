@@ -17,7 +17,7 @@ public final class Main {
         }
         ApplicationConfig reflection = Larvey.parse(source).map(ApplicationConfig.class);
         print("reflection", reflection);
-        LarveyMapper bytecode = LarveyMapper.builder().strategy(MappingStrategy.BYTECODE).build();
+        LarveyMapper bytecode = Larvey.builder().strategy(MappingStrategy.BYTECODE).build();
         ApplicationConfig generated = bytecode.map(Larvey.parseAst(source), ApplicationConfig.class);
         print("bytecode", generated);
         System.out.println(Larvey.write(reflection));

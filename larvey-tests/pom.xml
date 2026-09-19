@@ -21,6 +21,12 @@
             <version>${project.version}</version>
         </dependency>
         <dependency>
+            <groupId>com.habbashx</groupId>
+            <artifactId>larvey-bytecode</artifactId>
+            <version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <version>${junit.version}</version>

@@ -4,8 +4,8 @@ import com.habbashx.larvey.annotations.LarveyDefault;
 import com.habbashx.larvey.annotations.LarveyProperty;
 import com.habbashx.larvey.api.Larvey;
 import com.habbashx.larvey.ast.ConfigurationNode;
+import com.habbashx.larvey.bytecode.BytecodeMappers;
 import com.habbashx.larvey.mapper.LarveyMapper;
-import com.habbashx.larvey.mapper.MappingStrategy;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -67,8 +67,8 @@ class BytecodeParityTest {
         }
     }
 
-    private final LarveyMapper reflection = LarveyMapper.builder().strategy(MappingStrategy.REFLECTION).build();
-    private final LarveyMapper bytecode = LarveyMapper.builder().strategy(MappingStrategy.BYTECODE).build();
+    private final LarveyMapper reflection = LarveyMapper.builder().build();
+    private final LarveyMapper bytecode = BytecodeMappers.create();
 
     private <T> void assertParity(String source, Class<T> type, java.util.function.Function<T, Object> view) {
         ConfigurationNode ast = Larvey.parseAst(source);

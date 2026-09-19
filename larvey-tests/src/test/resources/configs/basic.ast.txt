@@ -1,0 +1,6 @@
+prop name = "HabbashX" @1:1
+prop age = 21 @2:1
+prop height = 185.5 @3:1
+prop enabled = true @4:1
+prop disabled = false @5:1
+prop nothing = null @6:1

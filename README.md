@@ -36,19 +36,35 @@ ApplicationConfig config = Larvey.load("application.larvey").map(ApplicationConf
 System.out.println(config.server().port());
 ```
 
+See `larvey-examples` for a runnable demo (`com.habbashx.larvey.example.Main` plus `application.larvey`).
+
+## Modules
+
+| Module | Contents |
+|---|---|
+| `larvey-annotations` | Mapping annotations and `LarveyConverter` |
+| `larvey-core` | Lexer, parser, AST, semantic model, functions, runtime |
+| `larvey-mapper` | Reflection mapper, metadata, serializer |
+| `larvey-bytecode` | ASM mapper generator, cache |
+| `larvey-api` | Public developer API (`Larvey`, `LarveyDocument`) |
+| `larvey-processor` | Compile-time annotation processor |
+| `larvey-tests` | Tests, golden files, benchmarks |
+| `larvey-examples` | Runnable example application |
+
 ## Features
 
 - Hand-written lexer with line/column errors, no regex parsing
-- Recursive-descent parser producing an immutable AST (`BlockNode` vs `ObjectNode` distinguished)
+- Recursive-descent parser producing an immutable AST (`BlockNode` vs `ObjectNode` distinguished, `InterpolatedStringNode` for `"${...}"`)
 - Semantic model with duplicate detection and dotted-path lookup
 - Reflection mapper: primitives, `BigInteger`/`BigDecimal`, enums, `List`/`Set`/`Map`, arrays, nested objects, `Optional`, records, `@LarveyCreator`
 - Annotations: `@LarveyConfig`, `@LarveyProperty`, `@LarveyIgnore`, `@LarveyCreator`, `@LarveyDefault`, `@LarveyAlias`, `@LarveyFormat`, `@LarveyConverter`, `@LarveyRequired`
-- Serialization: `Larvey.write(config)` produces deterministic readable output
-- Functions: `env()`, `sys()`, plus custom `LarveyFunction` registration
-- Interpolation: `url = "${host}:${port}"`
+- Serialization: `Larvey.write(config)` produces deterministic readable output, including nested maps
+- Functions: `env()`, `sys()`, `file()`, `property()`, plus custom `LarveyFunction` registration with configuration context
+- Interpolation: `url = "${host}:${port}"` resolved against scope then root, with `$${` escape and cycle guard
 - Type conversion: `String` to `UUID`, `Path`, `URI`, `Duration`, enums, numerics, custom converters
-- Bytecode mapper (ASM): generates direct field/setter mappers, thread-safe cache, identical results to reflection, automatic fallback
-- Strategies: `LarveyMapper.builder().strategy(MappingStrategy.BYTECODE).build()`
+- Validation: `@LarveyRequired`, `@LarveyFormat("regex:...")`; mapping errors carry path, target type, line, and column
+- Bytecode mapper (ASM): generated direct mappers for beans, records, creators, collections, and nested types, thread-safe cache, automatic reflection fallback with identical results
+- Strategies: `Larvey.builder().strategy(MappingStrategy.BYTECODE).build()`
 
 ## Usage
 
@@ -61,13 +77,16 @@ Larvey.write(config, Path.of("application.larvey"));
 LarveyMapper mapper = Larvey.builder()
         .strategy(MappingStrategy.BYTECODE)
         .function(new MyFunction())
-        .build()
-        .map(ast, ApplicationConfig.class);
+        .build();
 ```
+
+## Compile-Time Processor
+
+`larvey-processor` validates `@LarveyConfig` classes during compilation (duplicate properties, multiple `@LarveyCreator` constructors) and generates a `<Type>LarveyMeta` class exposing `ROOT`, `TARGET`, and `PROPERTIES`. It is wired into `larvey-tests` via `annotationProcessorPaths`.
 
 ## Benchmarks
 
-Run `com.habbashx.larvey.benchmark.LarveyBenchmark`. It measures parsing, AST creation, reflection mapping, bytecode mapping, and serialization.
+See `docs/BENCHMARKS.md`. The ASM mapper maps the sample config about 1.55x faster than reflection (30,008 ns/op vs 46,538 ns/op).
 
 ## Testing
 
@@ -75,7 +94,7 @@ Run `com.habbashx.larvey.benchmark.LarveyBenchmark`. It measures parsing, AST cr
 mvn test
 ```
 
-44 tests: lexer, parser, mapper, bytecode parity, serialization round-trips, golden `.larvey` files under `src/test/resources/configs`.
+Covers lexer, parser, mapper, bytecode parity, serialization round-trips, functions, format validation, semantics, the annotation processor, and golden `.larvey` files with expected AST snapshots under `larvey-tests/src/test/resources/configs`.
 
 ## Requirements
 

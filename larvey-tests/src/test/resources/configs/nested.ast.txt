@@ -1,0 +1,13 @@
+block app @1:1
+  prop name = "GazaPay" @2:5
+  prop version = "1.0.0" @3:5
+  prop debug = true @4:5
+  block server @5:5
+    prop host = "0.0.0.0" @6:9
+    prop port = 8080 @7:9
+    block ssl @8:9
+      prop enabled = true @9:13
+      prop port = 8443 @10:13
+    end ssl
+  end server
+end app
