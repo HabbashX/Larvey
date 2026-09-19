@@ -5,42 +5,26 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.habbashx</groupId>
-    <artifactId>larvey</artifactId>
+    <artifactId>larvey-parent</artifactId>
     <version>0.1.0-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
+
+    <modules>
+        <module>larvey-annotations</module>
+        <module>larvey-core</module>
+        <module>larvey-mapper</module>
+        <module>larvey-bytecode</module>
+        <module>larvey-api</module>
+        <module>larvey-processor</module>
+        <module>larvey-tests</module>
+        <module>larvey-examples</module>
+    </modules>
 
     <properties>
-        <maven.compiler.source>25</maven.compiler.source>
-        <maven.compiler.target>25</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <junit.version>5.10.2</junit.version>
         <asm.version>9.7</asm.version>
     </properties>
-
-    <dependencies>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm</artifactId>
-            <version>${asm.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.ow2.asm</groupId>
-            <artifactId>asm-util</artifactId>
-            <version>${asm.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>org.junit.jupiter</groupId>
-            <artifactId>junit-jupiter</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jetbrains</groupId>
-            <artifactId>annotations</artifactId>
-            <version>26.0.2</version>
-            <scope>compile</scope>
-        </dependency>
-    </dependencies>
 
     <build>
         <plugins>
@@ -50,8 +34,6 @@
                 <version>3.13.0</version>
                 <configuration>
                     <release>17</release>
-                    <source>25</source>
-                    <target>25</target>
                 </configuration>
             </plugin>
             <plugin>
