@@ -290,62 +290,7 @@ public final class ReflectionMapper {
     }
 
     private Configuration syntheticConfig(LarveyValue.ObjectValue objectValue, String path) {
-        List<com.habbashx.larvey.ast.AstNode> members = new ArrayList<>();
-        for (Map.Entry<String, LarveyValue> entry : objectValue.properties().entrySet()) {
-            members.add(new com.habbashx.larvey.ast.AssignmentNode(entry.getKey(), rawToValueNode(entry.getValue()), entry.getValue().location()));
-        }
-        return Configuration.from(new ConfigurationNode(members, objectValue.location()));
-    }
-
-    private com.habbashx.larvey.ast.ValueNode rawToValueNode(LarveyValue value) {
-        if (value instanceof LarveyValue.StringValue stringValue) {
-            return new com.habbashx.larvey.ast.StringNode(stringValue.value(), stringValue.location());
-        }
-        if (value instanceof LarveyValue.IntegerValue integerValue) {
-            return new com.habbashx.larvey.ast.IntegerNode(integerValue.value(), integerValue.location());
-        }
-        if (value instanceof LarveyValue.DecimalValue decimalValue) {
-            return new com.habbashx.larvey.ast.DecimalNode(decimalValue.value(), decimalValue.location());
-        }
-        if (value instanceof LarveyValue.BooleanValue booleanValue) {
-            return new com.habbashx.larvey.ast.BooleanNode(booleanValue.value(), booleanValue.location());
-        }
-        if (value instanceof LarveyValue.NullValue nullValue) {
-            return new com.habbashx.larvey.ast.NullNode(nullValue.location());
-        }
-        if (value instanceof LarveyValue.ArrayValue arrayValue) {
-            List<com.habbashx.larvey.ast.ValueNode> elements = new ArrayList<>();
-            for (LarveyValue element : arrayValue.elements()) {
-                elements.add(rawToValueNode(element));
-            }
-            return new com.habbashx.larvey.ast.ArrayNode(elements, arrayValue.location());
-        }
-        if (value instanceof LarveyValue.ObjectValue objectValue) {
-            List<com.habbashx.larvey.ast.AssignmentNode> props = new ArrayList<>();
-            for (Map.Entry<String, LarveyValue> entry : objectValue.properties().entrySet()) {
-                props.add(new com.habbashx.larvey.ast.AssignmentNode(entry.getKey(), rawToValueNode(entry.getValue()), entry.getValue().location()));
-            }
-            return new com.habbashx.larvey.ast.ObjectNode(props, objectValue.location());
-        }
-        if (value instanceof LarveyValue.FunctionCallValue functionCallValue) {
-            List<com.habbashx.larvey.ast.ValueNode> args = new ArrayList<>();
-            for (LarveyValue arg : functionCallValue.arguments()) {
-                args.add(rawToValueNode(arg));
-            }
-            return new com.habbashx.larvey.ast.FunctionCallNode(functionCallValue.name(), args, functionCallValue.location());
-        }
-        if (value instanceof LarveyValue.InterpolatedValue interpolatedValue) {
-            List<com.habbashx.larvey.ast.InterpolatedStringNode.Part> parts = new ArrayList<>();
-            for (LarveyValue.InterpolatedValue.Part part : interpolatedValue.parts()) {
-                if (part instanceof LarveyValue.InterpolatedValue.Text text) {
-                    parts.add(new com.habbashx.larvey.ast.InterpolatedStringNode.TextPart(text.text()));
-                } else if (part instanceof LarveyValue.InterpolatedValue.Expression expression) {
-                    parts.add(new com.habbashx.larvey.ast.InterpolatedStringNode.ExpressionPart(expression.expression()));
-                }
-            }
-            return new com.habbashx.larvey.ast.InterpolatedStringNode(interpolatedValue.raw(), parts, interpolatedValue.location());
-        }
-        throw new IllegalStateException("Unknown value");
+        return Configuration.of(objectValue.properties(), Map.of(), objectValue.location(), path);
     }
 
     private Object convertArray(LarveyValue.ArrayValue arrayValue, Class<?> target, Type generic, String path, Class<?> owner) {

@@ -5,7 +5,6 @@ import com.habbashx.larvey.function.FunctionContext;
 import com.habbashx.larvey.function.FunctionRegistry;
 import com.habbashx.larvey.semantic.Configuration;
 import com.habbashx.larvey.semantic.LarveyValue;
-import java.lang.reflect.Constructor;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -29,21 +28,37 @@ public final class ConfigurationResolver {
         if (depth > MAX_DEPTH) {
             throw new com.habbashx.larvey.exception.LarveySemanticException("Cyclic function or property reference", path, node.location().line(), node.location().column());
         }
-        Map<String, LarveyValue> props = new LinkedHashMap<>();
+        Map<String, LarveyValue> props = null;
+        boolean changed = false;
         for (Map.Entry<String, LarveyValue> entry : node.properties().entrySet()) {
-            props.put(entry.getKey(), resolveValue(entry.getValue(), root, join(path, entry.getKey()), depth));
+            LarveyValue resolved = resolveValue(entry.getValue(), root, join(path, entry.getKey()), depth);
+            if (resolved != entry.getValue()) {
+                if (props == null) {
+                    props = new LinkedHashMap<>(node.properties());
+                }
+                props.put(entry.getKey(), resolved);
+                changed = true;
+            }
         }
-        Map<String, Configuration> blocks = new LinkedHashMap<>();
+        Map<String, Configuration> blocks = null;
         for (Map.Entry<String, Configuration> entry : node.blocks().entrySet()) {
-            blocks.put(entry.getKey(), resolveFunctions(entry.getValue(), root, join(path, entry.getKey()), depth + 1));
+            Configuration resolved = resolveFunctions(entry.getValue(), root, join(path, entry.getKey()), depth + 1);
+            if (resolved != entry.getValue()) {
+                if (blocks == null) {
+                    blocks = new LinkedHashMap<>(node.blocks());
+                }
+                blocks.put(entry.getKey(), resolved);
+                changed = true;
+            }
         }
-        try {
-            Constructor<Configuration> c = Configuration.class.getDeclaredConstructor(Map.class, Map.class, com.habbashx.larvey.ast.SourceLocation.class, String.class);
-            c.setAccessible(true);
-            return c.newInstance(props, blocks, node.location(), node.path());
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
+        if (!changed) {
+            return node;
         }
+        return Configuration.of(
+                props == null ? node.properties() : props,
+                blocks == null ? node.blocks() : blocks,
+                node.location(),
+                node.path());
     }
 
     private LarveyValue resolveValue(LarveyValue value, Configuration root, String path, int depth) {
@@ -51,7 +66,7 @@ public final class ConfigurationResolver {
             throw new com.habbashx.larvey.exception.LarveySemanticException("Cyclic function or property reference", path, value.location().line(), value.location().column());
         }
         if (value instanceof LarveyValue.FunctionCallValue fn) {
-            List<LarveyValue> args = new ArrayList<>();
+            List<LarveyValue> args = new ArrayList<>(fn.arguments().size());
             for (LarveyValue arg : fn.arguments()) {
                 args.add(resolveValue(arg, root, path, depth + 1));
             }
@@ -59,16 +74,35 @@ public final class ConfigurationResolver {
             return resolveValue(result, root, path, depth + 1);
         }
         if (value instanceof LarveyValue.ArrayValue arrayValue) {
-            List<LarveyValue> elements = new ArrayList<>();
-            for (LarveyValue element : arrayValue.elements()) {
-                elements.add(resolveValue(element, root, path, depth + 1));
+            List<LarveyValue> elements = null;
+            List<LarveyValue> original = arrayValue.elements();
+            for (int i = 0; i < original.size(); i++) {
+                LarveyValue resolved = resolveValue(original.get(i), root, path, depth + 1);
+                if (resolved != original.get(i)) {
+                    if (elements == null) {
+                        elements = new ArrayList<>(original);
+                    }
+                    elements.set(i, resolved);
+                }
+            }
+            if (elements == null) {
+                return value;
             }
             return new LarveyValue.ArrayValue(elements, arrayValue.location());
         }
         if (value instanceof LarveyValue.ObjectValue objectValue) {
-            Map<String, LarveyValue> props = new LinkedHashMap<>();
+            Map<String, LarveyValue> props = null;
             for (Map.Entry<String, LarveyValue> entry : objectValue.properties().entrySet()) {
-                props.put(entry.getKey(), resolveValue(entry.getValue(), root, join(path, entry.getKey()), depth + 1));
+                LarveyValue resolved = resolveValue(entry.getValue(), root, join(path, entry.getKey()), depth + 1);
+                if (resolved != entry.getValue()) {
+                    if (props == null) {
+                        props = new LinkedHashMap<>(objectValue.properties());
+                    }
+                    props.put(entry.getKey(), resolved);
+                }
+            }
+            if (props == null) {
+                return value;
             }
             return new LarveyValue.ObjectValue(props, objectValue.location());
         }
@@ -76,21 +110,37 @@ public final class ConfigurationResolver {
     }
 
     private Configuration resolveInterpolation(Configuration node, Configuration root) {
-        Map<String, LarveyValue> props = new LinkedHashMap<>();
+        Map<String, LarveyValue> props = null;
+        boolean changed = false;
         for (Map.Entry<String, LarveyValue> entry : node.properties().entrySet()) {
-            props.put(entry.getKey(), interpolate(entry.getValue(), node, root, join(node.path(), entry.getKey()), 0));
+            LarveyValue resolved = interpolate(entry.getValue(), node, root, join(node.path(), entry.getKey()), 0);
+            if (resolved != entry.getValue()) {
+                if (props == null) {
+                    props = new LinkedHashMap<>(node.properties());
+                }
+                props.put(entry.getKey(), resolved);
+                changed = true;
+            }
         }
-        Map<String, Configuration> blocks = new LinkedHashMap<>();
+        Map<String, Configuration> blocks = null;
         for (Map.Entry<String, Configuration> entry : node.blocks().entrySet()) {
-            blocks.put(entry.getKey(), resolveInterpolation(entry.getValue(), root));
+            Configuration resolved = resolveInterpolation(entry.getValue(), root);
+            if (resolved != entry.getValue()) {
+                if (blocks == null) {
+                    blocks = new LinkedHashMap<>(node.blocks());
+                }
+                blocks.put(entry.getKey(), resolved);
+                changed = true;
+            }
         }
-        try {
-            Constructor<Configuration> c = Configuration.class.getDeclaredConstructor(Map.class, Map.class, com.habbashx.larvey.ast.SourceLocation.class, String.class);
-            c.setAccessible(true);
-            return c.newInstance(props, blocks, node.location(), node.path());
-        } catch (Exception e) {
-            throw new IllegalStateException(e);
+        if (!changed) {
+            return node;
         }
+        return Configuration.of(
+                props == null ? node.properties() : props,
+                blocks == null ? node.blocks() : blocks,
+                node.location(),
+                node.path());
     }
 
     private LarveyValue interpolate(LarveyValue value, Configuration scope, Configuration root, String path, int depth) {
@@ -104,19 +154,41 @@ public final class ConfigurationResolver {
                 return value;
             }
             String resolved = interpolateString(raw, scope, root, path, depth);
+            if (resolved.equals(raw)) {
+                return value;
+            }
             return new LarveyValue.StringValue(resolved, stringValue.location());
         }
         if (value instanceof LarveyValue.ArrayValue arrayValue) {
-            List<LarveyValue> elements = new ArrayList<>();
-            for (LarveyValue element : arrayValue.elements()) {
-                elements.add(interpolate(element, scope, root, path, depth));
+            List<LarveyValue> elements = null;
+            List<LarveyValue> original = arrayValue.elements();
+            for (int i = 0; i < original.size(); i++) {
+                LarveyValue resolved = interpolate(original.get(i), scope, root, path, depth);
+                if (resolved != original.get(i)) {
+                    if (elements == null) {
+                        elements = new ArrayList<>(original);
+                    }
+                    elements.set(i, resolved);
+                }
+            }
+            if (elements == null) {
+                return value;
             }
             return new LarveyValue.ArrayValue(elements, arrayValue.location());
         }
         if (value instanceof LarveyValue.ObjectValue objectValue) {
-            Map<String, LarveyValue> props = new LinkedHashMap<>();
+            Map<String, LarveyValue> props = null;
             for (Map.Entry<String, LarveyValue> entry : objectValue.properties().entrySet()) {
-                props.put(entry.getKey(), interpolate(entry.getValue(), scope, root, join(path, entry.getKey()), depth));
+                LarveyValue resolved = interpolate(entry.getValue(), scope, root, join(path, entry.getKey()), depth);
+                if (resolved != entry.getValue()) {
+                    if (props == null) {
+                        props = new LinkedHashMap<>(objectValue.properties());
+                    }
+                    props.put(entry.getKey(), resolved);
+                }
+            }
+            if (props == null) {
+                return value;
             }
             return new LarveyValue.ObjectValue(props, objectValue.location());
         }

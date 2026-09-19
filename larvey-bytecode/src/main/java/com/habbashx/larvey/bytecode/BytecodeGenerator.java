@@ -105,7 +105,7 @@ public final class BytecodeGenerator {
         if (useCreator) {
             emitCreatorMap(writer, internalName, targetDesc, creatorPlans);
         } else {
-            emitBeanMap(writer, internalName, targetDesc, beanPlans);
+            emitBeanMap(writer, internalName, targetInternal, targetDesc, beanPlans);
         }
         writer.visitEnd();
         byte[] bytes = writer.toByteArray();
@@ -119,7 +119,7 @@ public final class BytecodeGenerator {
         }
     }
 
-    private static void emitBeanMap(ClassWriter writer, String internalName, String targetDesc, List<PropPlan> plans) {
+    private static void emitBeanMap(ClassWriter writer, String internalName, String targetInternal, String targetDesc, List<PropPlan> plans) {
         MethodVisitor map = writer.visitMethod(Opcodes.ACC_PUBLIC, "map", "(Lcom/habbashx/larvey/semantic/Configuration;)" + targetDesc, null, null);
         map.visitCode();
         Label start = new Label();
@@ -131,7 +131,7 @@ public final class BytecodeGenerator {
         map.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "invoke", "()" + targetDesc, false);
         map.visitVarInsn(Opcodes.ASTORE, 2);
         for (int i = 0; i < plans.size(); i++) {
-            emitBeanProperty(map, internalName, plans.get(i), i);
+            emitBeanProperty(map, internalName, targetInternal, plans.get(i), i);
         }
         map.visitVarInsn(Opcodes.ALOAD, 2);
         map.visitInsn(Opcodes.ARETURN);
@@ -151,7 +151,7 @@ public final class BytecodeGenerator {
         bridge.visitEnd();
     }
 
-    private static void emitBeanProperty(MethodVisitor map, String internalName, PropPlan plan, int index) {
+    private static void emitBeanProperty(MethodVisitor map, String internalName, String targetInternal, PropPlan plan, int index) {
         Label end = new Label();
         map.visitVarInsn(Opcodes.ALOAD, 1);
         map.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "com/habbashx/larvey/semantic/Configuration", "path", "()Ljava/lang/String;", false);
@@ -195,10 +195,10 @@ public final class BytecodeGenerator {
                 map.visitMethodInsn(Opcodes.INVOKESTATIC, "com/habbashx/larvey/bytecode/BytecodeRuntime", "mapFromValue", "(Lcom/habbashx/larvey/semantic/LarveyValue;Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;)Ljava/util/Map;", false);
             }
             map.visitVarInsn(Opcodes.ASTORE, 6);
-            emitStore(map, internalName, index);
+            emitStore(map, internalName, targetInternal, index, plan);
             map.visitJumpInsn(Opcodes.GOTO, end);
             map.visitLabel(absent);
-            emitAbsent(map, internalName, plan, index);
+            emitAbsent(map, internalName, targetInternal, plan, index);
             map.visitJumpInsn(Opcodes.GOTO, end);
             map.visitLabel(hasBlock);
             map.visitVarInsn(Opcodes.ALOAD, 3);
@@ -216,7 +216,7 @@ public final class BytecodeGenerator {
                 map.visitMethodInsn(Opcodes.INVOKESTATIC, "com/habbashx/larvey/bytecode/BytecodeRuntime", "mapFromConfig", "(Lcom/habbashx/larvey/semantic/Configuration;Ljava/lang/Class;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;)Ljava/util/Map;", false);
             }
             map.visitVarInsn(Opcodes.ASTORE, 6);
-            emitStore(map, internalName, index);
+            emitStore(map, internalName, targetInternal, index, plan);
             map.visitLabel(end);
             return;
         }
@@ -235,7 +235,7 @@ public final class BytecodeGenerator {
             map.visitFieldInsn(Opcodes.GETFIELD, internalName, "owner", "Ljava/lang/Class;");
             map.visitMethodInsn(Opcodes.INVOKESTATIC, "com/habbashx/larvey/bytecode/BytecodeRuntime", "optionalFrom", "(Ljava/util/Optional;ILjava/lang/Class;Ljava/lang/String;Ljava/lang/Class;)Ljava/util/Optional;", false);
             map.visitVarInsn(Opcodes.ASTORE, 6);
-            emitStore(map, internalName, index);
+            emitStore(map, internalName, targetInternal, index, plan);
             map.visitLabel(end);
             return;
         }
@@ -251,19 +251,71 @@ public final class BytecodeGenerator {
             map.visitVarInsn(Opcodes.ALOAD, 6);
             map.visitJumpInsn(Opcodes.IFNULL, end);
         }
-        emitStore(map, internalName, index);
+        emitStore(map, internalName, targetInternal, index, plan);
         map.visitJumpInsn(Opcodes.GOTO, end);
         map.visitLabel(absent);
-        emitAbsent(map, internalName, plan, index);
+        emitAbsent(map, internalName, targetInternal, plan, index);
         map.visitLabel(end);
     }
 
-    private static void emitStore(MethodVisitor map, String internalName, int index) {
+    private static void emitStore(MethodVisitor map, String internalName, String targetInternal, int index, PropPlan plan) {
+        Class<?> valueType = plan.isSetter() ? plan.accessType() : plan.type();
         map.visitVarInsn(Opcodes.ALOAD, 0);
         map.visitFieldInsn(Opcodes.GETFIELD, internalName, "mh" + index, "Ljava/lang/invoke/MethodHandle;");
         map.visitVarInsn(Opcodes.ALOAD, 2);
         map.visitVarInsn(Opcodes.ALOAD, 6);
-        map.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "invoke", "(Ljava/lang/Object;Ljava/lang/Object;)V", false);
+        if (valueType.isPrimitive() || isAccessible(valueType)) {
+            emitCastUnbox(map, valueType);
+            String descriptor = "(L" + targetInternal + ";" + org.objectweb.asm.Type.getDescriptor(valueType) + ")V";
+            map.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "invokeExact", descriptor, false);
+        } else {
+            map.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "invoke", "(Ljava/lang/Object;Ljava/lang/Object;)V", false);
+        }
+    }
+
+    private static void emitCastUnbox(MethodVisitor visitor, Class<?> type) {
+        if (!type.isPrimitive()) {
+            visitor.visitTypeInsn(Opcodes.CHECKCAST, org.objectweb.asm.Type.getInternalName(type));
+            return;
+        }
+        String wrapper;
+        String method;
+        String descriptor;
+        if (type == boolean.class) {
+            wrapper = "java/lang/Boolean";
+            method = "booleanValue";
+            descriptor = "()Z";
+        } else if (type == int.class) {
+            wrapper = "java/lang/Integer";
+            method = "intValue";
+            descriptor = "()I";
+        } else if (type == long.class) {
+            wrapper = "java/lang/Long";
+            method = "longValue";
+            descriptor = "()J";
+        } else if (type == double.class) {
+            wrapper = "java/lang/Double";
+            method = "doubleValue";
+            descriptor = "()D";
+        } else if (type == float.class) {
+            wrapper = "java/lang/Float";
+            method = "floatValue";
+            descriptor = "()F";
+        } else if (type == byte.class) {
+            wrapper = "java/lang/Byte";
+            method = "byteValue";
+            descriptor = "()B";
+        } else if (type == short.class) {
+            wrapper = "java/lang/Short";
+            method = "shortValue";
+            descriptor = "()S";
+        } else {
+            wrapper = "java/lang/Character";
+            method = "charValue";
+            descriptor = "()C";
+        }
+        visitor.visitTypeInsn(Opcodes.CHECKCAST, wrapper);
+        visitor.visitMethodInsn(Opcodes.INVOKEVIRTUAL, wrapper, method, descriptor, false);
     }
 
     private static void emitConvertValue(MethodVisitor map, String internalName, PropPlan plan) {
@@ -329,7 +381,7 @@ public final class BytecodeGenerator {
         }
     }
 
-    private static void emitAbsent(MethodVisitor map, String internalName, PropPlan plan, int index) {
+    private static void emitAbsent(MethodVisitor map, String internalName, String targetInternal, PropPlan plan, int index) {
         if (plan.defaultValue() != null) {
             map.visitLdcInsn(plan.defaultValue());
             pushClass(map, plan.type());
@@ -338,7 +390,7 @@ public final class BytecodeGenerator {
             map.visitFieldInsn(Opcodes.GETFIELD, internalName, "owner", "Ljava/lang/Class;");
             map.visitMethodInsn(Opcodes.INVOKESTATIC, "com/habbashx/larvey/bytecode/BytecodeRuntime", "parseDefault", "(Ljava/lang/String;Ljava/lang/Class;Ljava/lang/String;Ljava/lang/Class;)Ljava/lang/Object;", false);
             map.visitVarInsn(Opcodes.ASTORE, 6);
-            emitStore(map, internalName, index);
+            emitStore(map, internalName, targetInternal, index, plan);
         } else if (plan.required()) {
             map.visitVarInsn(Opcodes.ALOAD, 4);
             map.visitVarInsn(Opcodes.ALOAD, 0);
@@ -392,15 +444,25 @@ public final class BytecodeGenerator {
         }
         map.visitVarInsn(Opcodes.ALOAD, 0);
         map.visitFieldInsn(Opcodes.GETFIELD, internalName, "mhCtor", "Ljava/lang/invoke/MethodHandle;");
+        boolean exact = true;
+        for (ParamPlan plan : plans) {
+            if (!plan.type().isPrimitive() && !isAccessible(plan.type())) {
+                exact = false;
+                break;
+            }
+        }
         for (int i = 0; i < plans.size(); i++) {
             map.visitVarInsn(Opcodes.ALOAD, slots[i]);
+            if (exact) {
+                emitCastUnbox(map, plans.get(i).type());
+            }
         }
         StringBuilder descriptor = new StringBuilder("(");
         for (int i = 0; i < plans.size(); i++) {
-            descriptor.append("Ljava/lang/Object;");
+            descriptor.append(exact ? org.objectweb.asm.Type.getDescriptor(plans.get(i).type()) : "Ljava/lang/Object;");
         }
         descriptor.append(")").append(targetDesc);
-        map.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", "invoke", descriptor.toString(), false);
+        map.visitMethodInsn(Opcodes.INVOKEVIRTUAL, "java/lang/invoke/MethodHandle", exact ? "invokeExact" : "invoke", descriptor.toString(), false);
         map.visitInsn(Opcodes.ARETURN);
         map.visitLabel(end);
         map.visitLabel(handler);

@@ -2,21 +2,29 @@
 
 Run: `com.habbashx.larvey.benchmark.LarveyBenchmark` (in `larvey-tests`).
 
-Config used: `name`, `version`, `debug`, plus a nested `server` block with `host` and `port`. 20,000 iterations per phase.
+Methodology: every shape is fully warmed up first (3,000 mixed iterations), then measured in 5 interleaved forks where reflection, bytecode, and resolution run back-to-back in the same loop under identical CPU/GC conditions. Reported values are medians. Single-fork timings without warmup showed up to 10x noise and are not trusted.
 
-## Results
+## Results (ns/op, lower is better)
 
-| Phase | Total (20,000 ops) | Per op |
-|---|---|---|
-| parse (lexer + parser + AST) | 185 ms | 9,287 ns |
-| reflection-map | 930 ms | 46,538 ns |
-| bytecode-map | 600 ms | 30,008 ns |
-| serialize | 554 ms | 27,744 ns |
+| Shape | Reflection | Bytecode | Resolve only | Speedup |
+|---|---|---|---|---|
+| flat (8 scalars) | 1,362 | 1,057 | 770 | 1.25x |
+| nested (blocks) | 4,071 | 3,482 | 2,664 | 1.17x |
+| collections | 3,394 | 2,613 | 1,770 | 1.31x |
+| record | 1,098 | 971 | 656 | 1.16x |
+| enums + UUID/Duration/BigDecimal | 1,338 | 1,152 | 487 | 1.15x |
+| inline objects | 2,580 | 2,256 | 1,633 | 1.16x |
+| parse (lexer + parser + AST) | 10,913 | — | — | — |
+| serialize | 4,505 | — | — | — |
 
-## Reflection vs Bytecode
+## Where the time goes
 
-The ASM-generated mapper performs the same mapping about **1.55x faster** than the reflection mapper on this configuration shape. Generated mappers use direct field/setter access through cached `MethodHandle`s, so repeated annotation inspection and reflective dispatch are eliminated from the hot path.
+Resolution (AST to semantic model, function evaluation, interpolation) is 55–65% of every mapping call and is shared by both strategies. The resolver reuses untouched subtrees by identity instead of rebuilding them, and builds configurations directly instead of through reflection, which made resolution 1.5–2.7x faster and lifted both mappers with it.
 
-Bytecode generation is pay-as-you-go: the first mapping of a type generates and caches the mapper in a thread-safe cache, and types the generator cannot handle (custom converters, format validation, non-accessible classes) transparently fall back to the reflection mapper with identical results.
+The remaining mapping delta comes from the generated mapper: direct `MethodHandle` stores with exact signatures (no lenient `invoke` conversions, no `Field.set`), direct conversion of enums and JDK scalar types with no reflective dispatch, and inline objects mapped through generated mappers instead of an AST round-trip.
 
-Machine: Windows, JDK 17+, single run, warm up included in the measured loop. Re-run on your own hardware before drawing conclusions.
+## Is reflection still needed?
+
+Not on the hot path. For standard configuration shapes the generated mapper performs zero reflective calls per mapping. Reflection remains in two deliberate roles: one-time metadata analysis at generation time (`ClassMetadata`), and a transparent fallback for exotic types (custom converters, `@LarveyFormat` validation, non-accessible classes), which produce results identical to the reflection mapper.
+
+Machine: Windows, JDK 17+, medians of 5 interleaved forks. Re-run on your own hardware before drawing conclusions.

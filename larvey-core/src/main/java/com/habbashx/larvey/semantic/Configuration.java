@@ -35,6 +35,10 @@ public final class Configuration {
         this.path = path;
     }
 
+    public static Configuration of(Map<String, LarveyValue> properties, Map<String, Configuration> blocks, SourceLocation location, String path) {
+        return new Configuration(properties, blocks, location, path);
+    }
+
     public static Configuration from(ConfigurationNode node) {
         return fromMembers(node.members(), node.sourceLocation(), "");
     }

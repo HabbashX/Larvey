@@ -108,13 +108,23 @@ public final class BytecodeRuntime {
     }
 
     public static Object beanFromValue(LarveyValue value, Class<?> beanClass, String path, Class<?> owner) {
-        if (value instanceof LarveyValue.ObjectValue) {
+        if (value instanceof LarveyValue.ObjectValue objectValue) {
+            if (ClassMetadata.of(beanClass).root().isEmpty()) {
+                return mapOrGenerate(Configuration.of(objectValue.properties(), Map.of(), objectValue.location(), path), beanClass);
+            }
             return DELEGATE.convertExternal(value, beanClass, beanClass, path);
         }
         throw new LarveyMappingException("Cannot convert value to '" + beanClass.getSimpleName() + "'", path, owner);
     }
 
     public static Object convertOther(LarveyValue value, Class<?> target, String path, Class<?> owner) {
+        if (target.isEnum() || target == java.util.UUID.class || target == java.nio.file.Path.class
+                || target == java.net.URI.class || target == java.time.Duration.class
+                || target == java.math.BigInteger.class || target == java.math.BigDecimal.class
+                || target == Character.class || target == char.class || target == Float.class || target == float.class
+                || target == Byte.class || target == byte.class || target == Short.class || target == short.class) {
+            return BytecodeConvert.toOther(value, target, path, owner);
+        }
         return DELEGATE.convertExternal(value, target, target, path);
     }
 

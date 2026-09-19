@@ -86,7 +86,7 @@ LarveyMapper mapper = Larvey.builder()
 
 ## Benchmarks
 
-See `docs/BENCHMARKS.md`. The ASM mapper maps the sample config about 1.55x faster than reflection (30,008 ns/op vs 46,538 ns/op).
+See `docs/BENCHMARKS.md`. The ASM mapper leads the reflection mapper on every measured shape (1.15–1.31x), and resolution reuse makes both mappers faster in absolute terms.
 
 ## Testing
 
