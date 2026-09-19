@@ -4,6 +4,11 @@
     <option name="linkedExternalProjectsSettings">
       <GradleProjectSettings>
         <option name="externalProjectPath" value="$PROJECT_DIR$/larvey-syntax-highlighter-plugin" />
+        <option name="modules">
+          <set>
+            <option value="$PROJECT_DIR$/larvey-syntax-highlighter-plugin" />
+          </set>
+        </option>
       </GradleProjectSettings>
     </option>
   </component>

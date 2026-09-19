@@ -1,0 +1,27 @@
+<idea-plugin>
+    <id>com.habbashx.larvey.plugin</id>
+    <name>Larvey</name>
+    <vendor url="https://github.com/HabbashX/Larvey">HabbashX</vendor>
+
+    <description><![CDATA[
+        Language support for Larvey configuration files (<code>.larvey</code>).<br>
+        Syntax highlighting with customizable colors, error checking with precise positions,
+        code completion for keywords, functions and <code>${...}</code> interpolation variables,
+        navigation to interpolated references, brace matching and comment support.
+    ]]></description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <resource-bundle>messages.MyMessageBundle</resource-bundle>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <fileTypeFactory implementation="com.habbashx.larvey.plugin.LarveyFileTypeFactory"/>
+        <lang.parserDefinition language="Larvey" implementationClass="com.habbashx.larvey.plugin.psi.LarveyParserDefinition"/>
+        <lang.syntaxHighlighterFactory language="Larvey" implementationClass="com.habbashx.larvey.plugin.highlight.LarveySyntaxHighlighterFactory"/>
+        <colorSettingsPage implementation="com.habbashx.larvey.plugin.highlight.LarveyColorSettingsPage"/>
+        <annotator language="Larvey" implementationClass="com.habbashx.larvey.plugin.annotator.LarveyAnnotator"/>
+        <completion.contributor language="Larvey" implementationClass="com.habbashx.larvey.plugin.completion.LarveyCompletionContributor"/>
+        <psi.referenceContributor language="Larvey" implementation="com.habbashx.larvey.plugin.references.LarveyReferenceContributor"/>
+        <lang.commenter language="Larvey" implementationClass="com.habbashx.larvey.plugin.LarveyCommenter"/>
+        <lang.braceMatcher language="Larvey" implementationClass="com.habbashx.larvey.plugin.LarveyBraceMatcher"/>
+    </extensions>
+</idea-plugin>
